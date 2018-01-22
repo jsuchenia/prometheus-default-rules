@@ -1,0 +1,4 @@
+#alertmanager_alerts_invalid_total - invalid alerts received (startsAt 0, start > end, wrong labels, no labels, wrong annotatons)
+#alertmanager_nflog_query_errors_total - Notification Logs error (?)
+#alertmanager_notifications_failed_total - Failed notifications
+#alertmanager_silences_query_errors_total - Number of failed silences query (internal error or wrong silence)

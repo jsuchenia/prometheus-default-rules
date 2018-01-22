@@ -1,0 +1,12 @@
+# We should investigate more details about JVM exporter!!!
+groups:
+- name: JVM rules
+  rules:
+  - alert: JvmMemory95
+    expr: jvm_memory_bytes_used /  jvm_memory_bytes_max > 0.95
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description: '{{$labels.instance}} reports high memory consumption for more than 1 minute'
+      summary: High JVM memory consumption on node {{$labels.instance}}

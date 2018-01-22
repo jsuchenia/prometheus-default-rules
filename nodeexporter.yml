@@ -1,0 +1,38 @@
+groups:
+- name: Node Exporter rules
+  rules:
+  - alert: DiskFreeSpaceTooLow
+    expr: node_filesystem_avail * 100 / node_filesystem_size < 30
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      description: '{{$labels.instance}} reports free disk space on {{$labels.device}}'
+      summary: There is no enough free space on a disk {{$labels.device}} at {{$labels.instance}}
+  - alert: DiskNotMounted
+    expr: node_disk_bytes_read unless ON(instance, device) label_replace(node_filesystem_size,
+      "device", "$1", "device", "/dev/([a-z]+)[0-9]*")
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description: '{{$labels.instance}} has no {{$labels.device}} mounted'
+      summary: Every system having {{$labels.device}} device must have it mounted
+        somewhere (ot it partition)
+  - alert: ActiveMemoryTooHigh
+    expr: node_memory_Active * 100 / node_memory_MemTotal > 80
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description: '{{$labels.instance}} reports high memory usage'
+      summary: Instance {{$labels.instance}} reports high active memory usage. Please check it
+  - alert: CpuTooBusy
+    expr: avg(irate(node_cpu{mode="idle"}[1m]) * 100) by (job, instance) < 10
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description: '{{$labels.instance}} reports high cpu usage. Free CPU less than {{$value}}'
+      summary: Instance {{$labels.instance}} reports high cpu usage.
+
