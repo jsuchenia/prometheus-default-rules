@@ -1,3 +1,4 @@
+# TODO: review all nodeexporter 
 groups:
 - name: Node Exporter rules
   rules:
