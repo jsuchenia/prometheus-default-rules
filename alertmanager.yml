@@ -1,4 +1,33 @@
-#alertmanager_alerts_invalid_total - invalid alerts received (startsAt 0, start > end, wrong labels, no labels, wrong annotatons)
-#alertmanager_nflog_query_errors_total - Notification Logs error (?)
-#alertmanager_notifications_failed_total - Failed notifications
-#alertmanager_silences_query_errors_total - Number of failed silences query (internal error or wrong silence)
+groups:
+- name: AlertManager rules
+  rules:
+  - alert: AlertManagerInvalidAlerts
+    expr: delta(alertmanager_alerts_invalid_total[1m]) > 0
+    labels:
+      severity: warning
+    annotations:
+      summary: "Alertmanager got invalid alerts"
+      description: "Alertmanager got invalid alerts, they will be discarded"
+  - alert: AlertManagerSilencesQueryErrors
+    expr: delta(alertmanager_silences_query_errors_total[1m]) > 0
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Alertmanager had some errors during silences query"
+      description: "Alertmanager had some errors during nflog query. Please check a storage or CPU usage of alert manager"
+  - alert: AlertManagerQueryErrors
+    expr: delta(alertmanager_nflog_query_errors_total[1m]) > 0
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Alertmanager had some errors during nflog query"
+      description: "Alertmanager had some errors during nflog query. Some Alerts are missing or delayed. Please check a storage or CPU usage of alert manager"
+  - alert: AlertManagerFailedAlerts
+    expr: alertmanager_notifications_failed_total > 0
+    labels:
+      severity: critical
+    annotations:
+      summary: AlertManager missed some alerts, they will not be delivered
+      description: AlertManager had problems with alert delivery. They were discarded and will not be delivered anylonger

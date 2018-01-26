@@ -1,15 +1,23 @@
 groups:
 - name: Node Exporter rules
   rules:
-  - alert: DiskFreeSpaceTooLow
-    expr: node_filesystem_avail * 100 / node_filesystem_size < 30
+  - alert: NodeDiskSpaceWarning
+    expr: round(node_filesystem_free{device=~"/dev/.*"} * 100 /node_filesystem_size{device=~"/dev/.*"}) < 20
     for: 1m
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.instance}} reports free disk space on {{$labels.device}}'
-      summary: There is no enough free space on a disk {{$labels.device}} at {{$labels.instance}}
-  - alert: DiskNotMounted
+      description: '{{$labels.instance}} reports low  disk space on {{$labels.mountpoint}} - only {{$value}}% left'
+      summary: Low disk space on {{$labels.mountpoint}} at {{$labels.instance}} - {{ $value }}
+  - alert: NodeDiskSpaceCritical
+    expr: round(node_filesystem_free{device=~"/dev/.*"} * 100 /node_filesystem_size{device=~"/dev/.*"}) < 5
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description: '{{$labels.instance}} reports critical  disk space on {{$labels.mountpoint}} - only {{$value}}% left'
+      summary: Critical low disk space on {{$labels.mountpoint}} at {{$labels.instance}} - {{ $value }}
+  - alert: NodeDiskNotMounted
     expr: node_disk_bytes_read unless ON(instance, device) label_replace(node_filesystem_size,
       "device", "$1", "device", "/dev/([a-z]+)[0-9]*")
     for: 1m
@@ -19,7 +27,7 @@ groups:
       description: '{{$labels.instance}} has no {{$labels.device}} mounted'
       summary: Every system having {{$labels.device}} device must have it mounted
         somewhere (ot it partition)
-  - alert: ActiveMemoryTooHigh
+  - alert: NodeActiveMemoryTooHigh
     expr: node_memory_Active * 100 / node_memory_MemTotal > 80
     for: 1m
     labels:
@@ -27,7 +35,7 @@ groups:
     annotations:
       description: '{{$labels.instance}} reports high memory usage'
       summary: Instance {{$labels.instance}} reports high active memory usage. Please check it
-  - alert: CpuTooBusy
+  - alert: NodeCpuTooBusy
     expr: avg(irate(node_cpu{mode="idle"}[1m]) * 100) by (job, instance) < 10
     for: 1m
     labels:
@@ -35,4 +43,19 @@ groups:
     annotations:
       description: '{{$labels.instance}} reports high cpu usage. Free CPU less than {{$value}}'
       summary: Instance {{$labels.instance}} reports high cpu usage.
-
+  - alert: NodeDiskRunningFull
+    expr: predict_linear(node_filesystem_free[6h], 3600 * 24) < 0
+    for: 30m
+    labels:
+      severity: warning
+    annotations:
+      description: device {{$labels.device}} on node {{$labels.instance}} is running
+        full within the next 24 hours (mounted at {{$labels.mountpoint}})
+  - alert: NodeDiskRunningFullCritical
+    expr: predict_linear(node_filesystem_free[30m], 3600 * 2) < 0
+    for: 10m
+    labels:
+      severity: critical
+    annotations:
+      description: device {{$labels.device}} on node {{$labels.instance}} is running
+        full within the next 2 hours (mounted at {{$labels.mountpoint}})
