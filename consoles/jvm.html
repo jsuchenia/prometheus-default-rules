@@ -1,0 +1,32 @@
+{{ template "head" . }}
+
+{{ template "prom_right_table_head" }}
+<tr>
+  <th>JVM</th>
+  <th>{{ template "prom_query_drilldown" (args "sum(up{job='jvm'})") }} / {{ template "prom_query_drilldown" (args "count(up{job='jvm'})") }}</th>
+</tr>
+{{ template "prom_right_table_tail" }}
+
+{{ template "prom_content_head" . }}
+<h1>JVM</h1>
+
+<table class="table table-condensed table-striped table-bordered" style="width: 0%">
+<tr>
+  <th>JVM</th>
+  <th>Up</th>
+  <th>Memory</th>
+</tr>
+{{ range query "up{job='jvm'}" | sortByLabel "instance" }}
+<tr>
+  <td><a href="jvm-overview.html?instance={{ .Labels.instance }}">{{ .Labels.instance }}</a></td>
+  <td {{ if eq (. | value) 1.0 }}>Yes{{ else }} class="alert-danger">No{{ end }}</td>
+  <td class="text-right">{{ template "prom_query_drilldown" (args (printf "process_uptime_seconds{job='prometheus',instance='%s'}" .Labels.instance) "s" "humanizeDuration") }}</td>
+  <td class="text-right">{{ template "prom_query_drilldown" (args (printf "sum(jvm_memory_used_bytes{job='prometheus',instance='%s'})" .Labels.instance) "B" "humanize1024")}}</td>
+</tr>
+{{ else }}
+<tr><td colspan=4>No JVMs found.</td></tr>
+{{ end }}
+
+{{ template "prom_content_tail" . }}
+
+{{ template "tail" }}
