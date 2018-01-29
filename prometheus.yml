@@ -1,8 +1,3 @@
-#prometheus_target_scrapes_sample_out_of_order_total - rejected OutOfOrder samples
-#prometheus_target_scrapes_sample_out_of_bounds_total - rejescted samples OutOfTimebounds
-#prometheus_target_scrapes_sample_duplicate_timestamp_total - rejected duplicated samples with different values
-#prometheus_target_scrapes_exceeded_sample_limit_total - rejected scrapes due to sample limit
-
 groups:
 - name: Prometheus rules
   rules:
@@ -20,45 +15,38 @@ groups:
     labels:
       severity: warning
     annotations:
-      description: Prometheus' alert notification queue is running full for {{$labels.instance}}
-      summary: Prometheus alert queue is running full {{$labels.instance}}
+      description: Prometheus' alert notification queue is running full for {{$labels.instance}}. New notifications will not be added
+      summary: Prometheus alert queue full - {{$labels.instance}}
   - alert: PrometheusErrorSendingAlerts
     expr: delta(prometheus_notifications_errors_total[5m]) > 0
     labels:
       severity: critical
     annotations:
-      description: Errors while sending alerts from Prometheus {{$labels.instance}} to Alertmanager {{$labels.Alertmanager}}
-      summary: Errors while sending allerts {{$labels.instance}} {{$labels.Alertmanager}}
-  - alert: PrometheusErrorSendingAlerts
-    expr: delta(prometheus_notifications_errors_total[5m]) > 0
-    labels:
-      severity: critical
-    annotations:
-      description: Errors while sending alerts from Prometheus {{$labels.instance}} to Alertmanager {{$labels.Alertmanager}}
-      summary: Errors while sending allerts {{$labels.instance}} {{$labels.Alertmanager}}
-  - alert: PrometheusNotConnectedToAlertmanagers
+      description: Errors while sending alerts from Prometheus {{$labels.instance}} to Alertmanager. Please check networking and machine availability
+      summary: Can't send alerts -  {{$labels.instance}}
+  - alert: PrometheusNotConnectedDroppedTotal
     expr: prometheus_notifications_dropped_total > 0
     labels:
-      severity: warning
+      severity: critical
     annotations:
-      description: "Prometheus {{ $labels.instance }} dropped {{ $value }} alerts. They will never come back"
+      description: "Prometheus {{ $labels.instance }} dropped {{ $value }} alerts. They will never come back. Please check netowrking and AlertManager availability"
       summary: "{{ $labels.instance }} dropped {{ $value }} alerts"
   - alert: PrometheusTSDBReloadsFailing
     expr: increase(prometheus_tsdb_reloads_failures_total[5m]) > 0
-    for: 30m
+    for: 1h
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.job}} at {{$labels.instance}} had {{$value | humanize}} reload failures over the last four hours.'
-      summary: Prometheus {{$labels.instance}} has issues reloading data blocks from disk
+      description: '{{$labels.job}} at {{$labels.instance}} had {{$value | humanize}} reload failures over the last hour.'
+      summary: Disk IO error -  {{$labels.instance}}
   - alert: PrometheusTSDBCompactionsFailing
     expr: increase(prometheus_tsdb_compactions_failed_total[5m]) > 0
-    for: 30m
+    for: 1h
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.job}} at {{$labels.instance}} had {{$value | humanize}} compaction failures over the last four hours.'
-      summary: Prometheus {{$labels.instance}} has issues compacting sample blocks
+      description: '{{$labels.job}} at {{$labels.instance}} had {{$value | humanize}} compaction failures over the last hour.'
+      summary: Disk IO error -  {{$labels.instance}}
   - alert: PrometheusTSDBWALCorruptions
     expr: tsdb_wal_corruptions_total > 0
     for: 30m
@@ -66,100 +54,141 @@ groups:
       severity: warning
     annotations:
       description: '{{$labels.job}} at {{$labels.instance}} has a corrupted write-ahead log (WAL).'
-      summary: Prometheus write-ahead log is corrupted o {{ $labels.instance }}
+      summary: WAL corrupted - {{ $labels.instance }}
   - alert: PrometheusRuleEvaluationFailures
     expr: delta(prometheus_rule_evaluation_failures_total[1m]) > 0
     for: 10m
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.job}} at {{$labels.instance}} reports rule evaulation error'
-      summary: There were some errors during evaluation of rules by {{$labels.job }} at {{ $labels.instance }}. Please validate system cpu, storage performance of this instance
+      summary: Rule evaluation error - {{$labels.instance}}
+      description: There were some errors during evaluation of rules by {{$labels.job }} at {{ $labels.instance }}. {{ $value }} issues from last minute. Please validate system cpu, storage performance of this instance
   - alert: PrometheusRuleGroupMissed
     expr: delta(prometheus_rule_group_iterations_missed_total[1m]) > 0
     for: 10m
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.job}} at {{$labels.instance}} skipped some groups'
-      summary: There were some errors during evaluation of rules by {{$labels.job }} at {{ $labels.instance }} - some rules groups were skipped. Please validate system cpu, storage performance of this instance
+      summary: Groups skipped - {{$labels.instance}}
+      description: There were some errors during evaluation of rules by {{$labels.job }} at {{ $labels.instance }} - some rules groups were skipped. {{ $value }} issues from last minute. Please validate system cpu, storage performance of this instance
   - alert: PrometheusZooKeeperFailures
     expr: delta(prometheus_treecache_zookeeper_failures_total[1m]) > 0
     for: 10m
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.job}} at {{$labels.instance}} reports problem with zookeeper'
-      summary: {{$labels.job }} at {{ $labels.instance }} - reports failures with zookeeper instance. Please check zookeeper health and networking connectivity
+      summary: "ZooKeeper failures - {{ $labels.instance }}"
+      description: "{{$labels.job }} at {{ $labels.instance }} - reports failures with zookeeper instance. {{ $value }} issues from last minute. Please check zookeeper health and networking connectivity"
   - alert: PrometheusTritonFailures
     expr: delta(prometheus_sd_triton_refresh_failures_total[1m]) > 0
     for: 10m
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.job}} at {{$labels.instance}} reports problem with triton service'
-      summary: {{$labels.job }} at {{ $labels.instance }} - reports failures with triton instance. Please check triton service health and networking connectivity
+      summary: Triton SD failures - {{$labels.instance}}
+      description: "{{$labels.job }} at {{ $labels.instance }} - reports failures with triton instance. {{ $value }} issues from last minute. Please check triton service health and networking connectivity"
   - alert: PrometheusOpenstackFailures
     expr: delta(prometheus_sd_openstack_refresh_failures_total[1m]) > 0
     for: 10m
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.job}} at {{$labels.instance}} reports problem with openstack metadata'
-      summary: {{$labels.job }} at {{ $labels.instance }} - reports failures with openstack discovery service. Please check openstack master servers and networking connectivity
+      summary: OpenStack failures - {{$labels.instance}}
+      description: "{{$labels.job }} at {{ $labels.instance }} - reports failures with openstack discovery service. {{ $value }} issues from last minute. Please check openstack master servers and networking connectivity"
   - alert: PrometheusMarathonFailures
     expr: delta(prometheus_sd_marathon_refresh_failures_total[1m]) > 0
     for: 10m
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.job}} at {{$labels.instance}} reports problem with marathon service'
-      summary: {{$labels.job }} at {{ $labels.instance }} - reports failures with marathon discovery service. Please check marathon servers and networking connectivity
+      summary: Marathon failures -  {{$labels.instance}}
+      description: "{{$labels.job }} at {{ $labels.instance }} - reports failures with marathon discovery service. {{ $value }} issues from last minute. Please check marathon servers and networking connectivity"
   - alert: PrometheusGCEFailures
     expr: delta(prometheus_sd_gce_refresh_failures_total[1m]) > 0
     for: 10m
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.job}} at {{$labels.instance}} reports problem with GCE service'
-      summary: {{$labels.job }} at {{ $labels.instance }} - reports failures with Google Compute Engine discovery. Please check GCE systems and networking connectivity
+      summary: GCE service failures - {{ $labels.instance }}
+      description: "{{$labels.job }} at {{ $labels.instance }} - reports failures with Google Compute Engine discovery. {{ $value }} issues from last minute. Please check GCE systems and networking connectivity"
+#prometheus_sd_file_read_errors_total The number of File-SD read errors.
   - alert: PrometheusFileReadFailures
     expr: delta(prometheus_sd_file_read_errors_total[1m]) > 0
     for: 10m
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.job}} at {{$labels.instance}} reports problem with file read discovery'
-      summary: {{$labels.job }} at {{ $labels.instance }} - reports failures with file read discovery. Please check storage performance, CPU and networking connectivity
+      summary: IO Erors at {{ $labels.instance }}
+      description: "{{$labels.job }} at {{ $labels.instance }} - reports failures with file read discovery. {{ $value }} issues from last minute. Please check storage performance, CPU and networking connectivity"
+#prometheus_sd_ec2_refresh_failures_total The number of EC2-SD scrape failures.
   - alert: PrometheusEc2Failures
     expr: delta(prometheus_sd_ec2_refresh_failures_total[1m]) > 0
     for: 10m
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.job}} at {{$labels.instance}} reports problem with AWS EC2 discovery'
-      summary: {{$labels.job }} at {{ $labels.instance }} - reports failures with AWS EC2 discovery service. Please check API availability, CPU and networking connectivity
+      summary: EC2 Errors - {{$labels.instance}}
+      description: "{{$labels.job }} at {{ $labels.instance }} - reports failures with AWS EC2 discovery service. {{ $value }} issues from last minute. Please check API availability, CPU and networking connectivity"
+#prometheus_sd_dns_lookup_failures_total The number of DNS-SD lookup failures.
   - alert: PrometheusDNSFailures
     expr: delta(prometheus_sd_dns_lookup_failures_total[1m]) > 0
     for: 10m
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.job}} at {{$labels.instance}} reports problem with DNS discovery'
-      summary: {{$labels.job }} at {{ $labels.instance }} - reports failures with DNS discovery service. Please check networking connectivity and DNS status
+      summary: DNS Errors - {{$labels.instance}}
+      description: "{{$labels.job }} at {{ $labels.instance }} - reports failures with DNS discovery service. {{ $value }} issues from last minute. Please check networking connectivity and DNS status"
+#prometheus_sd_consul_rpc_failures_total The number of Consul RPC call failures.
   - alert: PrometheusConsulFailures
     expr: delta(prometheus_sd_consul_rpc_failures_total[1m]) > 0
     for: 10m
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.job}} at {{$labels.instance}} reports problem with Consul discovery'
-      summary: {{$labels.job }} at {{ $labels.instance }} - reports failures with Consul discovery service. Please check networking connectivity and Consul service status
+      summary: Consul Failures - {{ $labels.instance }}
+      description: "{{$labels.job }} at {{ $labels.instance }} - reports failures with Consul discovery service. {{ $value }} issues from last minute. Please check networking connectivity and Consul service status"
+#prometheus_sd_azure_refresh_failures_total Number of Azure-SD refresh failures.
   - alert: PrometheusAzureFailures
     expr: delta(prometheus_sd_azure_refresh_failures_total[1m]) > 0
     for: 10m
     labels:
       severity: warning
     annotations:
-      description: '{{$labels.job}} at {{$labels.instance}} reports problem with Azure discovery'
-      summary: {{$labels.job }} at {{ $labels.instance }} - reports failures with Azure discovery service. Please check networking connectivity and Azure service status
+      summary: Azure SD Errors - {{ $labels.instance }}
+      description: "{{$labels.job }} at {{ $labels.instance }} - reports failures with Azure discovery service. {{ $value }} issues from last minute. Please check networking connectivity and Azure service status"
+#prometheus_target_scrapes_sample_out_of_order_total Total number of samples rejected due to not being out of the expected order
+  - alert: PrometheusOutOfOrderSamples
+    expr: delta(prometheus_target_scrapes_sample_out_of_order_total[1m]) > 0
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: Out-of-order samples - {{ $labels.instance }}
+      description: "{{$labels.job }} at {{ $labels.instance }} - reports reports problem with out-of-order samples. They will be missing and not recorded. Please check sender of those samples (exporter or application). Their formatter is buggy"
+#prometheus_target_scrapes_sample_out_of_bounds_total - rejescted samples OutOfTimebounds
+  - alert: PrometheusSamplesOutOfBoud
+    expr: delta(prometheus_target_scrapes_sample_out_of_bounds_total[1m]) > 0
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: Out-of-bound samples - {{ $labels.instance }}
+      description: "{{$labels.job }} at {{ $labels.instance }} - reports reports problem with out-of-bound samples. They will be missing and not recorded. Please check sender of those samples (exporter or application). Their formatter is buggy"
+#prometheus_target_scrapes_sample_duplicate_timestamp_total - rejected duplicated samples with different values
+  - alert: PrometheusAzureFailures
+    expr: delta(prometheus_target_scrapes_sample_duplicate_timestamp_total[1m]) > 0
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: Duplicated samples - {{ $labels.instance }}
+      description: "{{$labels.job }} at {{ $labels.instance }} - reports reports problem with duplicated samples - {{ $value }} elements from last minute. They will be missing and not recorded. Please check sender of those samples (exporter or application). Their formatter is buggy"
+#prometheus_target_scrapes_exceeded_sample_limit_total - rejected scrapes due to sample limit
+  - alert: PrometheusAzureFailures
+    expr: delta(prometheus_target_scrapes_exceeded_sample_limit_total[1m]) > 0
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: Too many samples - {{ $labels.instance }}
+      description: "{{$labels.job }} at {{ $labels.instance }} - reports too many samples and theu will not be scraped/stored - {{ $value }} elements from last minute. Please validate endpoint {{ $labels.instance }} to get more details"
