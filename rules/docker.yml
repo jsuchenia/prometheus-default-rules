@@ -1,0 +1,18 @@
+# Docker rules for prometheus, to monitor docker daemon https://docs.docker.com/engine/admin/prometheus/
+groups:
+- name: Docker deamon rules
+  rules:
+  - alert: DockerBuildsFailed
+    expr: delta(builder_builds_failed_total[1m]) > 0
+    labels:
+      severity: warning
+    annotations:
+      summary: "Docker daemon build error: {{ $labels.reason}}"
+      description: "Docker daemon reported errors: {{ $labels.reason}} - some contaners has not been started correctly - {{ $value }} errors from last minute. Please check instance {{ $labels.instance }} to verify a status"
+  - alert: DockerEngineErrors
+    expr: delta(engine_daemon_health_checks_failed_total[1m]) > 0
+    labels:
+      severity: warning
+    annotations:
+      summary: "Docker health-check errors: {{ $value }} within last minute"
+      description: "Docker health-check errors: {{ $value }} within last minute. Please check running container on {{ $labels.instance }} to verify their health-checks."

@@ -1,0 +1,20 @@
+# We should investigate more details about JVM exporter!!!
+groups:
+- name: Process rules
+  rules:
+  - alert: ProcessOpenFds
+    expr: process_open_fds * 100 / process_max_fds > 80
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      description: '{{$labels.instance}} reports high usage of filedescriptors. Please check process and opened resources'
+      summary: Opened filedescriptors greater than {{ $value }}%
+  - alert: ProcessOpenFdsCritical
+    expr: process_open_fds * 100 / process_max_fds > 95
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      description: '{{$labels.instance}} reports high usage of filedescriptors. Please check process and opened resources'
+      summary: Opened filedescriptors greater than {{ $value }}%
